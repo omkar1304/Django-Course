@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagination</title>
+</head>
+<body>
+    <center><h2>Pagination</h2></center>
+
+    {% for page in page_obj %}
+      <h3>{{page.name}}</h3>
+      <p>{{page.desc}}</p>
+      <p>{{page.publish_date}}</p>
+    {% endfor %}
+
+    {% if page_obj.has_previous %}
+      <a href="{% url 'paginationc' %}?page={{page_obj.previous_page_number}}">Previous</a>
+    {% endif %}
+
+    <span>{{page_obj.number}} of {{page_obj.paginator.num_pages}}</span>
+
+    {% if page_obj.has_next %}
+      <a href="{% url 'paginationc' %}?page={{page_obj.next_page_number}}">Next</a>
+    {% endif %}
+</body>
+</html>

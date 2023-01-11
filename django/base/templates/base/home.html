@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <center><h1>Home Page</h1></center>
+    {% if request.user.is_authenticated %}
+      <h5>Hello, {{request.user}}</h5>
+      <a href="{% url 'userlogout' %}">Sign out</a>
+    {% else %}
+      <h5>Hello, Anonymous User</h5>
+      <a href="{% url 'userlogin' %}">Sign in</a>
+    {% endif %}
+
+
+    <hr>
+
+    <h3>What you want to learn ? </h3>
+
+    <ol>
+      
+      <li><a href="{% url 'queryset' %}">Query Set</a></li>
+      <br>
+      <li><a href="{% url 'studentlist-f' %}">function based view</a></li>
+      <br>
+      <li><a href="{% url 'studentlist-c' %}">class based view</a></li>
+      <br>
+      <li><a href="{% url 'paginationf' %}">Pagination using function based view</a></li>
+      <br>
+      <li><a href="{% url 'paginationc' %}">Pagination using class based view</a></li>
+      <br>
+      <li><a href="{% url 'usersignupform' %}">user sign up form</a></li>
+      <br>
+      <li><a href="{% url 'usersignupform2' %}">user sign up form 2 (customized)</a></li>
+      <br>
+      <li><a href="{% url 'userlogin' %}">user login form</a></li>
+      <br>
+      <li><a href="{% url 'userlogout' %}">user logout conformation</a></li>
+      <br>
+      <li><a href="{% url 'userupdateform' %}">user update form</a></li>
+      <br>
+      <li><a href="{% url 'userupdateform2' %}">user update form 2 (customized)</a></li>
+      <br>
+      <li><a href="{% url 'userpasswordupdatewithold' %}">change user password with old</a></li>
+      <br>
+      <li><a href="{% url 'userpasswordupdatewithoutold' %}">change user password without old</a></li>
+      
+    </ol>
+    
+
+</body>
+</html>

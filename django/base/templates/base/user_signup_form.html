@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!-- for details : https://docs.djangoproject.com/en/4.1/topics/forms/ -->
+    <h1>User built in creation form</h1>
+
+    <hr>
+
+    <form action="" method="POST" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+
+        <!-- to show label -->
+        {{field.label}} 
+        <!-- to show input field -->
+        {{field}} 
+        <!-- to show validation errors -->
+        {{field.errors | striptags}} 
+
+        <!-- to show help while creating pass or username -->
+        <!-- {{field.help_text}} -->
+        <br><br>
+  
+        {% endfor %}
+        <input type="submit" value="submit">
+    </form>
+
+    <h4>Already signed in? <a href="{% url 'userlogin' %}">Sign in</a></h4>
+    
+    
+</body>
+</html>

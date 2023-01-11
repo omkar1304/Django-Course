@@ -1,0 +1,470 @@
+To use of viewset and router  -->
+
+defination : for every type of method whether its get(list, retrive), post(create), put(update), delete(destroy)
+             we need to create different views(except generic API view) and also for each view we need to make url.
+             to handle this we can make use of viewset. viewset will create automatically views for each method and assign url for it
+             to handle all internal urls we can use of router.
+
+Step 1 : Create viewset in views.py
+
+from rest_framework import viewsets
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'pk'
+
+Step 2 : Create router in urls.py and attach viewset to it to get URLs and add in urlspattern list
+
+from rest_framework.routers import DefaultRouter
+
+# creating router and attching viewset to it
+router2 = DefaultRouter()
+router2.register('singer-viewset', SingerViewSet, basename='singer')
+
+# adding path of to access router in urlspattern list
+path('viewset2/', include(router2.urls)),
+
+Step 3 : To access router path and viewset 
+
+base url + mentionded path in urlspattern ->
+
+for example : http://127.0.0.1:8000/api/viewset2/
+
+So using above url we can access router and through that we can access registered viewset
+
+for example : http://127.0.0.1:8000/api/viewset2/singer-viewset/
+
+here "singer-viewset" is name which define while registering viewset in router
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Auhtnetication and Permisssions ->
+
+
+# Permissions ->
+
+# Type of permissions ->  
+    1. AllowAny -> Any user can access and perform any type of action
+    2. IsAuthenticated -> Only registered user can access and perform any type of action
+    3. IsAuthenticatedOrReadOnly -> if authenticated then can pefrom any type of action else only get type of action
+    4. IsAdminUser -> Only admin can access and perfrom any type of action
+    5. DjangoModelPermissions -> using django admin panel we can assign permission(view, update, create, delete) to specofic person
+    6. CustomPermission -> we can user our own custom permission by inheriating any built in permission as below(for example : refer permissions.py file) 
+
+To add permissions in view we need to add below two lines ->
+
+# import permissions
+from rest_framework import permissions
+
+# add permission in view
+ if function based view -> add this decorator above api function view
+ @permission_classes([permissions.IsAuthenticated])
+
+ if class based view -> add this line in api class based view
+ permission_classes = [permissions.IsAuthenticated] 
+
+
+# Authentication ->
+
+1. Basic authentication :
+    if we add basic authentication in authentication_classes then while accessing that API will get one prompt window
+    where it will ask to enter username and password after that only we can access API
+    (it works only when we define permisssions_classes except AllowAny-> it allows any user to see api so basic authentication dosen't work)
+
+    Add these line in your API view ->
+
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+
+2. Session authentication :
+    if we add session authentication in authentication_classes then we must need to include rest_framework.urls in urls.py file to add login button at right-top of nav bar. So basically it will ask to login and make session to access particular API view. otherwise it will show error like -> "Authentication credentials were not provided."
+
+    To build session authentication add below lines 
+
+    # add below line in urls.py here we can give any path name but include should be same -> rest_framework.urls
+    path('sesssion/', include('rest_framework.urls')),
+
+    # once we add rest_framework.urls then we will get login button to build session so just add below lines in API view
+    authentication_classes = [authentication.SessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+
+3. Token Authentication :
+    Here we need to generate token before we accesss API view. There are multiple ways to generate token
+
+    1)Using django admin panel
+
+    # Add authtoken app in your installed apps list in settings.py and apply migrations
+    INSTALLED_APPS = [
+        ...
+        'rest_framework.authtoken'
+    ]
+    # to make migrations 
+    python manage.py migrate
+
+    Once you do that then you will be able to Token app in admin panel. inside that by selecting user you can generate token
+    after that copy that token and perform below steps to access token based authentication API view
+
+    token = 'grgert4366rggat3453432' # random token for example
+        headers = {
+            "Authorization" : f"Token {token}"
+        }
+        endpoint = 'http://127.0.0.1:8000/api/productgenericapi/'
+        response = requests.get(endpoint, headers=headers)
+
+    2)Using cmd line 
+
+    # Add authtoken app in your installed apps list in settings.py and apply migrations
+    INSTALLED_APPS = [
+        ...
+        'rest_framework.authtoken'
+    ]
+    # to make migrations 
+    python manage.py migrate
+
+    # then run below command in treminal
+    python manage.py drf_create_token username 
+
+    # here in place of username we need to mention user available in django DB
+    after this copy that token and pefrom same steps 
+
+    token = 'grgert4366rggat3453432' # random token for example
+        headers = {
+            "Authorization" : f"Token {token}"
+        }
+        endpoint = 'http://127.0.0.1:8000/api/productgenericapi/'
+        response = requests.get(endpoint, headers=headers)
+
+    3)Using auth_views.obtain_auth_token views 
+
+    Step 1 : Add authtoken app in your installed apps list in settings.py and apply migrations
+    INSTALLED_APPS = [
+        ...
+        'rest_framework.authtoken'
+    ]
+    # to make migrations 
+    python manage.py migrate
+
+    Step 2 : import authtoken and attach any url to it
+    # import
+    from rest_framework.authtoken import views as auth_views 
+    # url to get token
+    path('auth/', auth_views.obtain_auth_token),
+
+
+    Step 3 : Add TokenAuthentication in required API view in views.py file
+    # for example ->
+    class ProductGenericAPIView(GenericAPIView):
+        ...
+        authentication_classes = [authentication.TokenAuthentication]
+        ...
+
+    Step 4 : Add below steps in client side file (from where you making request)
+    from getpass import getpass
+    # get the token from authtoken views
+    auth_endpoint = 'http://127.0.0.1:8000/api/auth/'
+    # provide username and password
+    username =  input("Enter your username \n")
+    password = getpass("Enter your password \n")
+    # as it is post request. hence pass json data with username and password and get the token
+    auth_response = requests.post(auth_endpoint, json={'username' : username, 'password' : password})
+    # if we get the token i.e. code => 200 then build headers 
+    # and pass with URL which need tokenbased authentication
+    if auth_response.status_code == 200:
+        token = auth_response.json()['token'] # getting token from response 
+        headers = {
+            "Authorization" : f"Token {token}"
+        }
+        endpoint = 'http://127.0.0.1:8000/api/productgenericapi/'
+        response = requests.get(endpoint, headers=headers)
+        print(response.text)
+    else:
+        print("Invalid token")
+
+
+    4)Third Party -> JWT (Json Web Token)
+
+    Using JWT we can get token and pass it to API view to perfrom action. JWT returns tuple(token, refresh)
+    token -> it gives us token which has validadity for 5 mins
+    refresh -> if tokens get expired then instead of passing username and password again to get new token we can use refresh token so we dont have to pass username and password again and again. but it also has time validadity for 1 day. after that we need to pass username and password to get new toeken as well as refresh.
+
+    if we want to increase or decrease validadity then add below settings in settings.py
+
+    SIMPLE_JWT = {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15), # this will inc/dec time for token
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # this will inc/dec time for refresh
+        # below field is false means when we try to get token using refresh code then refresh token will remain same but we get new token 
+        # if we make it true so every time we try to get new token using refresh then it will create new token as well as new refresh token
+        'ROTATE_REFRESH_TOKENS': False,
+    }
+
+
+    Step 1 : Install JWT using pip command
+
+    pip install djangorestframework-simplejwt
+
+    Step 2 : Add JWT in INSTALLED_APPS of settings.py file
+
+    INSTALLED_APPS = [
+        ...
+        'rest_framework_simplejwt',
+        ...
+    ]
+
+    Step 3 : To get Token and Refresh we need import their views from rest_framework_simplejw in urls.py file
+
+    # import ->
+    from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+    # create their paths same as we do for Class based view ->
+    path('obtaintoken/', TokenObtainPairView.as_view(), name='obtaintoken'), # here we can give any path name
+    path('refreshtoken/', TokenRefreshView.as_view(), name='refreshtoken'),
+
+    Step 4 : Add JWT authentication in API view
+
+    # import ->
+    from rest_framework_simplejwt.authentication import JWTAuthentication
+
+    # add in any API views which needs JWT authentication
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    Step 5 : get token and refresh (here we are using cmd to implement JVVT aunthentication)
+
+    # ''To make this work in cmd we need to install http using followng cmd''
+    # pip install httpie
+
+    # to get token for first time we can user ontain token path 
+
+    # first time get token
+    http POST http://127.0.0.1:8000/api/obtaintoken/ username="test" password="Omkar@1304"
+    # output ->
+    {
+        "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMjUyNzM4LCJpYXQiOjE2NzMyNTI0MzgsImp0aSI6ImMwMWZmYTkyZWNmMjQ5ODZiOTRhM2EwYWQ5OTMzZWU3IiwidXNlcl9pZCI6Mn0.1I3EN1q2W1hNGbSP9O1ZxJnDz4G-FhqiJH5Fl56gdKI",    
+
+        "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY3MzMzODgzOCwiaWF0IjoxNjczMjUyNDM4LCJqdGkiOiJjOGEwNWQyYTQ1NDM0ZjNlYjRjMjA4NWZiMGUwMDNjNCIsInVzZXJfaWQiOjJ9.l0zpLNJYsalDZFBbkZrufX2yG3o1bcSOuMNNoFAzl4M"    
+    }
+
+    # to get token using refresh token we can use refresh token path
+
+    # refresh token
+    http http://127.0.0.1:8000/api/refreshtoken/ refresh='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY3MzMzODgzOCwiaWF0IjoxNjczMjUyNDM4LCJqdGkiOiJjOGEwNWQyYTQ1NDM0ZjNlYjRjMjA4NWZiMGUwMDNjNCIsInVzZXJfaWQiOjJ9.l0zpLNJYsalDZFBbkZrufX2yG3o1bcSOuMNNoFAzl4M'
+
+
+    Step 6 : Once we have token then we can perform CRUD opertions on API view
+
+    basic syntax : http method_name url_path/ 'Authorization: Bearer token_code'
+
+    # here we are using code viewset to implement CRUD operations
+
+    # GET -> To access list API View
+    http http://127.0.0.1:8000/api/viewset3/code/ 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMjUzMTEzLCJpYXQiOjE2NzMyNTI0MzgsImp0aSI6ImY0OGU3NGNhNTAzZTRjYmFhNDEyYTExMWJlZDZmMTU4IiwidXNlcl9pZCI6Mn0.m7LbhaC5-WxJzPhQeYMcnZNc5jn9arJVbQOYmIP5Ndk' 
+
+    # GET -> To access detail API View
+    http http://127.0.0.1:8000/api/viewset3/code/1/ 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMjU1NTA3LCJpYXQiOjE2NzMyNTI0MzgsImp0aSI6ImRhMjE4NzdjMGVlZTQxYTY5MGYzMmI0NGU2YWUyNmJkIiwidXNlcl9pZCI6Mn0.TcXbDhWSDUtJZa94EAup9nh3te1UUbZ1F5JNlwDKx14'
+
+    # POST -> to create API View
+    http -f POST http://127.0.0.1:8000/api/viewset3/code/ name=Swift desc=cool 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMjU0NDk5LCJpYXQiOjE2NzMyNTI0MzgsImp0aSI6IjZkYjFmZjRkYWIxNDRjNDQ4ZmI4MmIwODYzMDUzNjJkIiwidXNlcl9pZCI6Mn0.y8FLECVW6A7m_-eT6lYhBTMr_GZfrxsfD8mSqW5hckQ'
+
+    # PUT -> To update API View
+    http PUT http://127.0.0.1:8000/api/viewset3/code/6/ name=swifteee desc=DK 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMjU1NTA3LCJpYXQiOjE2NzMyNTI0MzgsImp0aSI6ImRhMjE4NzdjMGVlZTQxYTY5MGYzMmI0NGU2YWUyNmJkIiwidXNlcl9pZCI6Mn0.TcXbDhWSDUtJZa94EAup9nh3te1UUbZ1F5JNlwDKx14'
+
+    # DELETE => To Delete API View
+    http DELETE http://127.0.0.1:8000/api/viewset3/code/5/ 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMjU1NTA3LCJpYXQiOjE2NzMyNTI0MzgsImp0aSI6ImRhMjE4NzdjMGVlZTQxYTY5MGYzMmI0NGU2YWUyNmJkIiwidXNlcl9pZCI6Mn0.TcXbDhWSDUtJZa94EAup9nh3te1UUbZ1F5JNlwDKx14'
+
+
+4. Custom Authentication
+
+    Step 1 : Create separate file for this and inherit BaseAuthentication in own class
+
+    # import 
+    from rest_framework.authentication import BaseAuthentication
+
+    # implementation ->
+    class CustomAuthentication(BaseAuthentication):
+        # this is how we can overried below method and create custom authentication
+        def authenticate(self, request):
+            # here just randomly validating code for practice
+            username = request.GET.get('username')
+            if username is None:
+                return None
+            try:
+                user = User.objects.get(username=username)
+            except Exception as e:
+                raise AuthenticationFailed('No such user')
+
+            return super().authenticate(request)
+
+Step 2 : Now import this custom authentication in views.py and add in API view
+
+permission_classes = [CustomAuthentication]
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+To use of Filter, Search, Ordering functionality on API views  -->
+
+1. Filter 
+
+    Step 1 : install django-filter and add in INSTALLED_APPS of settings.py file
+
+        # to install django-filter
+        pip install django-filter
+
+        # add in INSTALLED_APPS
+        INSTALLED_APPS = [
+            ...
+            'django_filters',
+        ]
+
+    Step 2 : apply filter globally or locally on API views
+
+        # Globally : Add below setting in settings.py so it get applied on every API view
+
+        REST_FRAMEWORK = {
+            'DEFAULT_FILTER_BACKENDS': (
+                'django_filters.rest_framework.DjangoFilterBackend',
+                ...
+            ),
+        }
+
+        # Locall : Import filter backend and add in specific API View
+
+        # to import filter backend
+        from django_filters.rest_framework import DjangoFilterBackend
+
+        # add in API View Class
+        filter_backends = [DjangoFilterBackend]
+    
+    Step 3 : Now add fileds which we want to filter in API view class
+
+        # to add all fileds ->
+        filterset_fields = '__all__'
+
+        # to add specific field ->
+        filterset_fields = ['name', 'ratings']
+
+    Step 4 : To use filter we have two option either with url or GUI filter option 
+
+        # to filter in url itself we can pass like this -> url/?field_name=value&field_name=value
+        http://127.0.0.1:8000/api/viewset4/anime/?name=naruto&ratings=5
+    
+        # or if its browseable API then we will get filter button through that we can filter 
+
+
+        
+2. Search
+    
+    Step 1 : import search filter and add in API view class
+
+        # to import search filter
+        from rest_framework.filters import SearchFilter
+        # add in API View Class
+        filter_backends = [SearchFilter]
+
+    Step 2 : Now add fileds which we want to filter in API view class
+
+        # to add specific field ->
+        search_fields = ['name', 'ratings']
+
+        # to filter based on starts with in name field
+        search_fields = ['^name']
+
+        # to filter based on exact match in name field
+        search_fields = ['=name']
+
+    Step 3 : To use search we have two option either with url or GUI filter option 
+
+        # to search in url itself we can pass like this -> url/?search=value
+        http://127.0.0.1:8000/api/viewset4/anime/?search=Naruto
+    
+        # or if its browseable API then we will get filter button through that we can search 
+
+
+
+
+3. Ordering
+    
+        Step 1 : import Ordering filter and add in API view class
+    
+            # to import search filter
+            from rest_framework.filters import OrderingFilter
+            # add in API View Class
+            filter_backends = [OrderingFilter]
+    
+        Step 2 : Now add fileds which we want to order in API view class
+
+            # to add all fileds ->
+            ordering_fields = '__all__'
+    
+            # to add specific field ->
+            ordering_fields = ['name', 'ratings']
+    
+    
+        Step 3 : To use ordering we have two option either with url or GUI filter option 
+    
+            # to perform ordering in url itself we can pass like this -> url/?ordering=field_name (for ascending)
+            http://127.0.0.1:8000/api/viewset4/anime/?ordering=name
+
+            # to perform ordering in url itself we can pass like this -> url/?ordering=field_name (for descending)
+            http://127.0.0.1:8000/api/viewset4/anime/?ordering=-name
+        
+            # or if its browseable API then we will get filter button through that we can order  
+    
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Django cors headers (TO allow any third party application to access our API)
+
+Step 1 : install django-cors-headers and add in INSTALLED_APPS and MIDDLEWARE in setting.py file
+
+    # To install
+    pip install django-cors-headers
+
+    # to add in installed apps
+    INSTALLED_APPS = [
+        ...,
+        "corsheaders",
+        ...,
+    ]
+
+    # to add in middleware
+    MIDDLEWARE = [
+        ...,
+        "corsheaders.middleware.CorsMiddleware",
+        ...,
+    ]
+
+Step 2 : Now based on condition add third party application URLs using any option below in setting.py
+
+    1. CORS_ALLOWED_ORIGINS 
+    It accepts list of third party urls. Add this in settings.py for example ->
+
+    CORS_ALLOWED_ORIGINS = [
+        "https://example.com",
+        "https://sub.example.com",
+        "http://localhost:8080",
+        "http://127.0.0.1:9000",
+    ]
+
+    2. CORS_ALLOWED_ORIGIN_REGEXES
+    It accepts list of third party urls in regex pattern. Add this in settings.py for example ->
+
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://\w+\.example\.com$",
+    ]
+
+
+    3. CORS_ALLOW_ALL_ORIGINS
+    It is boolean type field. By default its false. Add this in settings.py for example ->
+
+    # it will allow any url to get API data
+    CORS_ALLOW_ALL_ORIGINS = True 
+
+    # it will not allow any url to get API data
+    CORS_ALLOW_ALL_ORIGINS = False 
+
+
+

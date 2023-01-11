@@ -1,0 +1,101 @@
+To create custom user model  -->
+
+Step 1 : import AbstractUser in models.py and create User mode with inherating AbstractUser and add addition fields in that
+
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+
+    username = None
+    email = models.EmailField(unique=True)
+    mobile = models.CharField(max_length=14)
+    bio = models.TextField(max_length=200)
+    avatar = models.ImageField(null=True, blank=True) 
+
+Step 2 : Now we need to make email as login field instead of username. For that add below lines in user model
+
+    username = None
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+Step 3 : Now tell django to user our cutomize model. Add below line settings.py 
+    # appname.User
+    AUTH_USER_MODEL = 'base.User'
+
+Step 4 : To handle our user we need some manager. Create manage.py file and add below code in it.
+
+from django.contrib.auth.base_user import BaseUserManager
+
+
+class UserManager(BaseUserManager):
+
+    use_in_migrations = True
+
+    def create_user(self, email, password=None, **extra_fields):
+
+        if not email:
+            raise ValueError('Email is required')
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError(('Super user must have is_staff true'))
+
+        return self.create_user(email, password, **extra_fields)
+
+Step 5 : Now connect our manager to custom user. Add below line in user model
+
+    from .manager import UserManager # import manager
+
+    objects = UserManager() # connect
+
+Step 6 : Apply migrations (NOTE : delete old migration files and db.sqlite3 file if doing it in middle of developement)
+
+Step 7 : create superuser and it will show email field instead of username and create super user and check every fields are added in user using admin panel and verify
+
+# for reference -> https://youtu.be/LQvZD2jYFpY
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+To handle image field  -->
+
+Step 1 : Add imagefield im required model like this 
+
+    avatar = models.ImageField(null=True, blank=True) 
+    # we can add this field for default picture -> default='static/images/image_name.png'
+
+Step 2 : create upload folder where want to store all uploaded files and below lines in settings.py
+
+    # to handle images on url like for example -> http://127.0.0.1:8000/uploads/prefix_sum.png
+    MEDIA_URL = '/uploads/'
+
+    # to upload file in upload folder
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
+
+Step 3 : to access image on url we need to update urlpatterns in urls.py of project folder 
+
+from django.conf.urls.static import static
+from django.conf import settings
+
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+Step 4 : to add image in django template
+
+    <img src={{model.avatar.url}}> # here model is model name which we pass through context
+
+# for reference -> https://youtu.be/aNk2CAkHvlE
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+

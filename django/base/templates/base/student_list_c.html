@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Using class base view</h1>
+    {% for student in students %}
+      <h5> {{student.id}} | {{student.name}} | {{student.email}} | {{student.std}}
+        <a href="{% url 'studentupdate-c' student.id %}">update</a>
+        <a href="{% url 'studentdelete-c' student.id %}">delete</a>
+      </h5>
+    {% endfor %}
+
+    <h3>*** Adding model in context in class base view ***</h3>
+    {% for test in tests %}
+      <h5> {{test.subject}} | {{test.marks}} </h5>
+    {% endfor %}
+</body>
+</html>
